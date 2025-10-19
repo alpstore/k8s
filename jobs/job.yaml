@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: alpinas-iso-build
+  labels:
+    app: alpinas
+spec:
+  template:
+    metadata:
+      labels:
+        app: alpinas
+        job: iso-build
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: builder
+        image: image-registry.openshift-image-registry.svc:5000/yournamespace/alpinas-iso-builder:latest
+        command: ["/bin/sh", "/scripts/build-iso.sh"]
+        env:
+        - name: PROFILE
+          value: "alpinas"
+        - name: ARCH
+          value: "x86_64"
+        - name: TAG
+          value: "edge"
+        volumeMounts:
+        - name: iso-output
+          mountPath: /build/iso
+        - name: build-scripts
+          mountPath: /scripts
+        - name: custom-profile
+          mountPath: /build/profile
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+      volumes:
+      - name: iso-output
+        persistentVolumeClaim:
+          claimName: alpinas-iso-pvc
+      - name: build-scripts
+        configMap:
+          name: build-scripts
+          defaultMode: 0755
+      - name: custom-profile
+        configMap:
+          name: custom-profile
+          defaultMode: 0755

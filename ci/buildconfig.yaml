@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: alpinas-iso-builder
+  labels:
+    app: alpinas
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: alpinas-iso-builder:latest
+  source:
+    type: Git
+    git:
+      uri: https://github.com/alpstore/k8s.git
+      ref: main
+    contextDir: ci
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+---
+apiVersion: v1
+kind: ImageStream
+metadata:
+  name: alpinas-iso-builder
+  labels:
+    app: alpinas

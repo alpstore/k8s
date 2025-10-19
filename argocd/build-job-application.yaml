@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alpinas-build-job
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alpstore/k8s.git
+    targetRevision: main
+    path: jobs
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: alpinas
+  syncPolicy:
+    # Manual sync only - trigger builds on demand
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
