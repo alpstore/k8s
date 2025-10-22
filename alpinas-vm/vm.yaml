@@ -13,7 +13,7 @@ spec:
     spec:
       source:
         http:
-          url: "https://alpinas-iso-server-alpinas.apps.da2.epheo.eu/alpinas-20251022-113624.iso"
+          url: "http://alpinas-iso-server.alpinas.svc.cluster.local:8080/alpinas-20251022-113624.iso"
       storage:
         resources:
           requests:
