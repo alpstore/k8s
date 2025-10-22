@@ -7,8 +7,8 @@ metadata:
 spec:
   output:
     to:
-      kind: ImageStreamTag
-      name: alpinas-iso-builder:latest
+      kind: DockerImage
+      name: registry.desku.be/alpinas/alpinas-iso-builder:latest
   source:
     type: Git
     git:

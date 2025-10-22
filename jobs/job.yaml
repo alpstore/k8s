@@ -14,7 +14,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: builder
-        image: image-registry.openshift-image-registry.svc:5000/yournamespace/alpinas-iso-builder:latest
+        image: registry.desku.be/alpinas/alpinas-iso-builder:latest
         command: ["/bin/sh", "/scripts/build-iso.sh"]
         env:
         - name: PROFILE
