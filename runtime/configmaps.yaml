@@ -47,6 +47,16 @@ data:
         --repository "https://dl-cdn.alpinelinux.org/alpine/$TAG/community" \
         --profile "$PROFILE"
 
+    # Rename ISO with timestamp
+    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+    for iso in "$OUTDIR"/*.iso; do
+        if [ -f "$iso" ]; then
+            NEWNAME="$OUTDIR/alpinas-${TIMESTAMP}.iso"
+            mv "$iso" "$NEWNAME"
+            echo "Renamed to: $(basename $NEWNAME)"
+        fi
+    done
+
     echo "ISO build complete! Output in $OUTDIR"
     ls -lh "$OUTDIR"
 ---
@@ -65,6 +75,7 @@ data:
         desc="AlpiNAS - Lightweight NAS distribution based on Alpine Linux"
         profile_abbrev="alpinas"
         kernel_addons=""
+        kernel_flavors="lts"
         apks="$apks
             bash
             vim
@@ -72,5 +83,8 @@ data:
             wget
             htop
             git
+            zfs
+            zfs-lts
+            zfs-scripts
             "
     }
