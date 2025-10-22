@@ -1,0 +1,224 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: alpinas
+  labels:
+    app: alpinas
+    component: vm
+spec:
+  running: false
+  dataVolumeTemplates:
+  - metadata:
+      name: alpinas-iso
+    spec:
+      source:
+        http:
+          url: "https://alpinas-iso-server-alpinas.apps.da2.epheo.eu/alpinas-20251022-113624.iso"
+      storage:
+        resources:
+          requests:
+            storage: 2Gi
+        storageClassName: lvms-vg1
+  - metadata:
+      name: alpinas-rootdisk
+    spec:
+      source:
+        blank: {}
+      storage:
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: lvms-vg1
+  - metadata:
+      name: alpinas-datadisk-1
+    spec:
+      source:
+        blank: {}
+      storage:
+        resources:
+          requests:
+            storage: 2Gi
+        storageClassName: lvms-vg1
+  - metadata:
+      name: alpinas-datadisk-2
+    spec:
+      source:
+        blank: {}
+      storage:
+        resources:
+          requests:
+            storage: 2Gi
+        storageClassName: lvms-vg1
+  - metadata:
+      name: alpinas-datadisk-3
+    spec:
+      source:
+        blank: {}
+      storage:
+        resources:
+          requests:
+            storage: 2Gi
+        storageClassName: lvms-vg1
+  - metadata:
+      name: alpinas-datadisk-4
+    spec:
+      source:
+        blank: {}
+      storage:
+        resources:
+          requests:
+            storage: 2Gi
+        storageClassName: lvms-vg1
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: alpinas
+        app: alpinas
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+          - name: iso
+            cdrom:
+              bus: sata
+            bootOrder: 1
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 2
+          - name: datadisk-1
+            disk:
+              bus: virtio
+          - name: datadisk-2
+            disk:
+              bus: virtio
+          - name: datadisk-3
+            disk:
+              bus: virtio
+          - name: datadisk-4
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 4Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: iso
+        dataVolume:
+          name: alpinas-iso
+      - name: rootdisk
+        dataVolume:
+          name: alpinas-rootdisk
+      - name: datadisk-1
+        dataVolume:
+          name: alpinas-datadisk-1
+      - name: datadisk-2
+        dataVolume:
+          name: alpinas-datadisk-2
+      - name: datadisk-3
+        dataVolume:
+          name: alpinas-datadisk-3
+      - name: datadisk-4
+        dataVolume:
+          name: alpinas-datadisk-4
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |-
+            #cloud-config
+            write_files:
+            - path: /tmp/install-alpinas.sh
+              permissions: '0755'
+              content: |
+                #!/bin/sh
+                set -e
+
+                echo "==== AlpiNAS Automated Installation ===="
+
+                # Wait for disks to be ready
+                sleep 5
+
+                # Create answer file for setup-alpine
+                cat > /tmp/answers <<EOF
+                KEYMAPOPTS="us us"
+                HOSTNAMEOPTS="-n alpinas"
+                INTERFACESOPTS="auto lo
+                iface lo inet loopback
+
+                auto eth0
+                iface eth0 inet dhcp
+                    hostname alpinas
+                "
+                TIMEZONEOPTS="-z UTC"
+                PROXYOPTS="none"
+                APKREPOSOPTS="-1"
+                SSHDOPTS="-c openssh"
+                NTPOPTS="-c chrony"
+                DISKOPTS="-m sys /dev/vda"
+                EOF
+
+                # Partition and format root disk
+                echo "Partitioning root disk /dev/vda..."
+                apk add -q e2fsprogs sfdisk
+
+                # Run setup-alpine with answer file
+                echo "Running automated Alpine installation..."
+                setup-alpine -f /tmp/answers
+
+                # Mount the new root and configure ZFS
+                echo "Configuring ZFS pool..."
+                mkdir -p /mnt/root
+                mount /dev/vda3 /mnt/root 2>/dev/null || mount /dev/vda2 /mnt/root || mount /dev/vda1 /mnt/root
+
+                # Chroot and set up ZFS
+                cat > /mnt/root/tmp/setup-zfs.sh <<'ZFSEOF'
+                #!/bin/sh
+                apk add zfs zfs-lts zfs-scripts
+                modprobe zfs
+                rc-update add zfs-import boot
+                rc-update add zfs-mount boot
+                rc-update add zfs-share default
+
+                # Create ZFS pool with 4 data disks in RAIDZ1
+                zpool create -f -o ashift=12 \
+                  -O acltype=posixacl \
+                  -O compression=lz4 \
+                  -O dnodesize=auto \
+                  -O normalization=formD \
+                  -O relatime=on \
+                  -O xattr=sa \
+                  tank raidz1 /dev/vdb /dev/vdc /dev/vdd /dev/vde
+
+                # Create datasets
+                zfs create tank/data
+                zfs create tank/backups
+                zfs create tank/shares
+
+                echo "ZFS pool created successfully"
+                zpool status
+                ZFSEOF
+
+                chmod +x /mnt/root/tmp/setup-zfs.sh
+                chroot /mnt/root /tmp/setup-zfs.sh || echo "ZFS setup will complete on first boot"
+
+                # Set root password
+                echo "root:alpinas" | chroot /mnt/root chpasswd
+
+                echo "==== Installation Complete ===="
+                echo "Rebooting in 10 seconds..."
+                sleep 10
+                reboot
+
+            runcmd:
+            - [ sh, -c, "if [ ! -f /root/.installed ]; then /tmp/install-alpinas.sh && touch /root/.installed; fi" ]

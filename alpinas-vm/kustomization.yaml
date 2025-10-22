@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: alpinas
+
+resources:
+  - vm.yaml
+  - cloudinit.yaml
+
+commonLabels:
+  app.kubernetes.io/name: alpinas
+  app.kubernetes.io/component: vm
+  app.kubernetes.io/part-of: alpinas
+
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: argocd
