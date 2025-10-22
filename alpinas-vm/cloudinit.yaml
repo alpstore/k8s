@@ -1,10 +1,10 @@
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: alpinas-cloudinit
   labels:
     app: alpinas
-data:
+stringData:
   userdata: |
     #cloud-config
     write_files:
