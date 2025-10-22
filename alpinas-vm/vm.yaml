@@ -135,5 +135,5 @@ spec:
           name: alpinas-datadisk-4
       - name: cloudinitdisk
         cloudInitNoCloud:
-          userDataSecretRef:
+          secretRef:
             name: alpinas-cloudinit
