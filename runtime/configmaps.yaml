@@ -19,6 +19,12 @@ data:
     echo "Architecture: $ARCH"
     echo "Tag: $TAG"
 
+    # Find and set the packager private key for signing
+    export PACKAGER_PRIVKEY=$(find /home/builder/.abuild -name "*.rsa" -type f | head -1)
+    if [ -n "$PACKAGER_PRIVKEY" ]; then
+        echo "Using packager key: $PACKAGER_PRIVKEY"
+    fi
+
     # Always remove and re-clone aports for clean build
     rm -rf /build/aports
     echo "Cloning aports repository..."
