@@ -19,10 +19,10 @@ data:
     echo "Architecture: $ARCH"
     echo "Tag: $TAG"
 
-    if [ ! -d "/build/aports" ]; then
-        echo "Cloning aports repository..."
-        git clone --depth=1 https://gitlab.alpinelinux.org/alpine/aports.git /build/aports
-    fi
+    # Always remove and re-clone aports for clean build
+    rm -rf /build/aports
+    echo "Cloning aports repository..."
+    git clone --depth=1 https://gitlab.alpinelinux.org/alpine/aports.git /build/aports
 
     # Copy AlpiNAS profile if exists
     if [ -f "/build/profile/mkimg.alpinas.sh" ]; then
