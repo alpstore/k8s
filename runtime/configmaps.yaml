@@ -27,7 +27,7 @@ data:
     # Copy AlpiNAS profile if exists
     if [ -f "/build/profile/mkimg.alpinas.sh" ]; then
         echo "Installing AlpiNAS profile..."
-        cp /build/profile/mkimg.alpinas.sh /build/aports/scripts/
+        cp /build/profile/mkimg.alpinas.sh /build/aports/scripts/mkimg.alpinas.sh
     fi
 
     mkdir -p "$OUTDIR"
