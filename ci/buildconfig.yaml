@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
   name: alpinas-iso-builder
@@ -21,11 +21,3 @@ spec:
       dockerfilePath: Dockerfile
   triggers:
     - type: ConfigChange
-    - type: ImageChange
----
-apiVersion: v1
-kind: ImageStream
-metadata:
-  name: alpinas-iso-builder
-  labels:
-    app: alpinas
