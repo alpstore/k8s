@@ -12,18 +12,20 @@ RUN apk add --no-cache \
     abuild \
     alpine-conf
 
-# Create build user
+# Create build directories and configure for OpenShift arbitrary UIDs
+# OpenShift runs with random UID but always GID=0 (root group)
+RUN mkdir -p /build /build/iso /build/aports /home/builder/.abuild && \
+    chgrp -R 0 /build /home/builder && \
+    chmod -R g=u /build /home/builder
+
+# Generate signing keys (needed for abuild)
 RUN adduser -D builder && \
     addgroup builder abuild && \
-    echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder
+    su builder -c "abuild-keygen -a -n" && \
+    chgrp -R 0 /home/builder/.abuild && \
+    chmod -R g=u /home/builder/.abuild
 
-USER builder
-WORKDIR /home/builder
-
-# Generate signing keys
-RUN abuild-keygen -a -n
-
-USER root
 WORKDIR /build
 
+# Don't specify USER - OpenShift will run as arbitrary UID with GID=0
 ENTRYPOINT ["/bin/sh"]
